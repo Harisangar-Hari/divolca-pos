@@ -27,7 +27,7 @@ export default function CustomerSelectModal({ onClose, onSelect }: Props) {
     const handleCreate = async () => {
         if (!name || !phone) return;
 
-        const res = await createCustomer({ name, phone });
+        const res = await createCustomer({ Name: name, Phone: phone });
         onSelect(res);
     };
 

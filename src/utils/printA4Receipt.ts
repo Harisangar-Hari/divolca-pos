@@ -65,7 +65,7 @@ export async function printA4Receipt(data: ReceiptData): Promise<void> {
 
   const dueDate = new Date(now);
   dueDate.setDate(dueDate.getDate() + 60);
-  const dueDateStr = dueDate.toISOString().split("T")[0];
+  // const dueDateStr = dueDate.toISOString().split("T")[0];
 
   const previousOutstanding = data.previousOutstanding || 0;
   const totalDue = previousOutstanding + (data.balance || 0);
@@ -117,7 +117,7 @@ export async function printA4Receipt(data: ReceiptData): Promise<void> {
 
   const combinedDiscountAmount = totalItemDiscount + (data.invoiceDiscountAmount || 0);
   const discountPercentApplied = data.invoiceDiscount ? `${data.invoiceDiscount}` : "0";
-  const totalOutstanding = data.totalDue ?? data.outstandingBalance ?? 0;
+  // const totalOutstanding = data.totalDue ?? data.outstandingBalance ?? 0;
 
   const netTotal = grandTotalWithoutDiscount - combinedDiscountAmount;
   const words = numberToWords(netTotal);

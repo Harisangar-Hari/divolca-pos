@@ -4,7 +4,7 @@ import { getProducts } from "../../api/productApi";
 import { useCartStore } from "../../store/cartStore";
 import { useToast } from "../../store/toastStore";
 import { useBeep } from "../../hooks/useBeep";
-import { printReceipt } from "../../utils/printReceipt";
+// import { printReceipt } from "../../utils/printReceipt";
 import { getCustomers, createCustomer, getCustomerById, type Customer } from "../../api/customerApi";
 import CustomerFormModal from "../../components/CustomerFormModal";
 import CustomerSelect from "../../components/CustomerSelect";
@@ -59,7 +59,6 @@ export default function POSPage() {
     increaseQty,
     decreaseQty,
     clearCart,
-    getTotal,
     updateItem,
   } = useCartStore();
 
@@ -103,9 +102,11 @@ export default function POSPage() {
     // If a customer was selected, update their balance in the UI
     if (selectedCustomerId) {
       const updatedCustomer = customers.find(c => c.id === selectedCustomerId);
+      console.log("Updated customer data:", updatedCustomer);
       // The customers state will be updated by loadCustomers
     }
   };
+  console.log(refreshCustomerData);
 
   useEffect(() => {
     setSelectedCustomerId("");
