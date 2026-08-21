@@ -13,6 +13,7 @@ interface CartItem {
   discountRs?: number;
   additionalPrice?: number;
   deductPrice?: number;
+  stockQty?: number;  // Optional field for stock quantity
 }
 
 interface CartState {

@@ -39,6 +39,7 @@ export default function POSPage() {
 
   const [results, setResults] = useState<Product[]>([]);
   const [showResults, setShowResults] = useState(false);
+  const [selectedResultIndex, setSelectedResultIndex] = useState(-1); // For keyboard navigation
 
   const [showCustomerModal, setShowCustomerModal] = useState(false);
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
@@ -51,6 +52,7 @@ export default function POSPage() {
 
   const barcodeRef = useRef<HTMLInputElement | null>(null);
   const searchRef = useRef<HTMLInputElement | null>(null);
+  const resultsRef = useRef<HTMLDivElement | null>(null);
 
   const {
     items,
@@ -99,11 +101,9 @@ export default function POSPage() {
   // ✅ Refresh customer data when selected customer changes or after checkout
   const refreshCustomerData = async () => {
     await loadCustomers();
-    // If a customer was selected, update their balance in the UI
     if (selectedCustomerId) {
       const updatedCustomer = customers.find(c => c.id === selectedCustomerId);
       console.log("Updated customer data:", updatedCustomer);
-      // The customers state will be updated by loadCustomers
     }
   };
   console.log(refreshCustomerData);
@@ -118,10 +118,55 @@ export default function POSPage() {
     barcodeRef.current?.focus();
   }, []);
 
+  // ✅ Keyboard navigation for search results
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!showResults || results.length === 0) return;
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSelectedResultIndex((prev) =>
+          prev < results.length - 1 ? prev + 1 : prev
+        );
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSelectedResultIndex((prev) => (prev > 0 ? prev - 1 : -1));
+      } else if (e.key === "Enter" && selectedResultIndex >= 0) {
+        e.preventDefault();
+        const selected = results[selectedResultIndex];
+        if (selected) {
+          addItem({
+            id: selected.id,
+            name: selected.name,
+            barcode: selected.barcode,
+            price: selected.price,
+            costPrice: selected.costPrice || 0,
+            quantity: 1,
+            discountRs: selected.discount || 0,
+            stockQty: selected.stockQty || 0,
+          });
+          beep();
+          setSearch("");
+          setShowResults(false);
+          setSelectedResultIndex(-1);
+          barcodeRef.current?.focus();
+        }
+      } else if (e.key === "Escape") {
+        setShowResults(false);
+        setSelectedResultIndex(-1);
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [showResults, results, selectedResultIndex, addItem, beep]);
+
   useEffect(() => {
     const delay = setTimeout(async () => {
       if (!search.trim()) {
         setResults([]);
+        setShowResults(false);
+        setSelectedResultIndex(-1);
         return;
       }
       const data = await getProducts();
@@ -132,27 +177,35 @@ export default function POSPage() {
       );
       setResults(filtered);
       setShowResults(true);
+      setSelectedResultIndex(-1);
     }, 300);
     return () => clearTimeout(delay);
   }, [search]);
+
+  // ✅ Scroll selected item into view
+  useEffect(() => {
+    if (selectedResultIndex >= 0 && resultsRef.current) {
+      const selectedElement = resultsRef.current.children[selectedResultIndex] as HTMLElement;
+      if (selectedElement) {
+        selectedElement.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  }, [selectedResultIndex]);
 
   const handleScan = async () => {
     if (!barcode) return;
     try {
       const product = await getProductByBarcode(barcode);
-
-      // ✅ The product is already parsed by the API function
-      // Just use it directly
       addItem({
         id: product.id,
         name: product.name,
         barcode: product.barcode,
-        price: product.price, // Already a number
+        price: product.price,
         costPrice: product.costPrice || 0,
         quantity: 1,
         discountRs: product.discount || 0,
+        stockQty: product.stockQty || 0,
       });
-
       beep();
       setBarcode("");
       barcodeRef.current?.focus();
@@ -284,10 +337,9 @@ export default function POSPage() {
         customerName: receiptCustomerName,
         customerPhone: receiptCustomerPhone,
         customerAddress: selectedCustomer?.address || "",
-        invoiceDiscount: invoiceDiscountPercent, // This is the percentage (e.g., 30)
+        invoiceDiscount: invoiceDiscountPercent,
         invoiceDiscountAmount: invoiceDiscountAmount,
         previousOutstanding: customerCreditBalance,
-
         outstandingBalance: totalOutstanding,
         totalDue: totalOutstanding,
       });
@@ -297,17 +349,12 @@ export default function POSPage() {
       clearCart();
       setCash(0);
       setPaidAmount(0);
-      // ✅ Don't clear selected customer immediately - we'll refresh data first
-      // setSelectedCustomerId("");
       setPaymentMode("cash");
       setInvoiceDiscountPercent(0);
       setCustomerNameInput("");
       setCustomerPhoneInput("");
 
-      // ✅ IMPORTANT: Refresh customer data after checkout to get updated balances
       await loadCustomers();
-
-      // ✅ Clear selected customer after refresh
       setSelectedCustomerId("");
 
     } catch (error: any) {
@@ -352,7 +399,7 @@ export default function POSPage() {
               </div>
             </div>
 
-            {/* SEARCH */}
+            {/* SEARCH - Updated with keyboard navigation */}
             <div className="bg-white border border-gray-300 rounded-sm shadow-sm p-4 relative">
               <label className="text-xs font-bold tracking-wider text-gray-500 uppercase mb-2 block">Find Product</label>
               <div className="flex items-center bg-white border border-gray-300 rounded-sm focus-within:border-gray-500 focus-within:ring-1 focus-within:ring-gray-500 transition-colors">
@@ -366,15 +413,36 @@ export default function POSPage() {
                   ref={searchRef}
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "ArrowDown" || e.key === "ArrowUp" || e.key === "Enter") {
+                      e.preventDefault();
+                    }
+                  }}
                   className="w-full py-2.5 pr-3 text-sm outline-none placeholder:text-gray-400"
-                  placeholder="Search name or barcode..."
+                  placeholder="Search name or barcode... (↓↑ to navigate)"
                 />
+                {search && (
+                  <button
+                    onClick={() => {
+                      setSearch("");
+                      setShowResults(false);
+                      setSelectedResultIndex(-1);
+                      searchRef.current?.focus();
+                    }}
+                    className="pr-3 text-gray-400 hover:text-gray-600"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
 
               {/* SEARCH RESULTS DROPDOWN */}
               {showResults && results.length > 0 && (
-                <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-300 shadow-xl max-h-72 overflow-y-auto rounded-sm z-20">
-                  {results.map((p) => (
+                <div
+                  ref={resultsRef}
+                  className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-300 shadow-xl max-h-72 overflow-y-auto rounded-sm z-20"
+                >
+                  {results.map((p, index) => (
                     <div
                       key={p.id}
                       onClick={() => {
@@ -386,14 +454,17 @@ export default function POSPage() {
                           costPrice: p.costPrice || 0,
                           quantity: 1,
                           discountRs: p.discount || 0,
+                          stockQty: p.stockQty || 0,
                         });
                         beep();
                         setSearch("");
                         setShowResults(false);
+                        setSelectedResultIndex(-1);
                         searchRef.current?.blur();
                         barcodeRef.current?.focus();
                       }}
-                      className="flex items-center justify-between px-4 py-4 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0 transition-colors"
+                      className={`flex items-center justify-between px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0 transition-colors ${index === selectedResultIndex ? 'bg-blue-50 border-l-4 border-l-[#0B6E4F]' : ''
+                        }`}
                     >
                       <div className="flex-1 pr-4">
                         <p className="font-semibold text-gray-800 text-sm">{p.name}</p>
@@ -416,12 +487,17 @@ export default function POSPage() {
                       </div>
                     </div>
                   ))}
+                  <div className="px-4 py-2 bg-gray-50 text-xs text-gray-400 border-t border-gray-200 flex justify-between">
+                    <span>↑↓ to navigate</span>
+                    <span>Enter to select</span>
+                    <span>Esc to close</span>
+                  </div>
                 </div>
               )}
             </div>
           </div>
 
-          {/* CART */}
+          {/* CART - Updated with editable quantity and stock display */}
           <div className="bg-white border border-gray-300 rounded-sm shadow-sm flex-1 flex flex-col min-h-[400px]">
             <div className="px-4 py-3 border-b border-gray-300 flex items-center justify-between bg-gray-50">
               <h2 className="text-xs font-bold tracking-wider text-gray-600 uppercase">Current Sale</h2>
@@ -471,7 +547,12 @@ export default function POSPage() {
                           <tr key={i.id} className="border-b border-gray-100 last:border-0 group hover:bg-gray-50">
                             <td className="py-3 pr-2">
                               <div className="flex flex-col">
-                                <p className="font-semibold text-gray-800">{i.name}</p>
+                                <p className="font-semibold text-gray-800">
+                                  {i.name}
+                                  <span className="ml-2 text-xs font-normal text-gray-400">
+                                    (Stock: {i.stockQty || 0})
+                                  </span>
+                                </p>
                                 <div className="flex flex-wrap gap-x-2 text-xs text-gray-500 mt-0.5">
                                   <span>Sell: Rs {i.price.toFixed(2)}</span>
                                   <span className="text-gray-400">|</span>
@@ -482,10 +563,44 @@ export default function POSPage() {
 
                             <td className="py-3 px-2 align-middle">
                               <div className="flex items-center justify-center gap-1 border border-gray-300 rounded-sm bg-white overflow-hidden w-fit mx-auto">
-                                <button onClick={() => decreaseQty(i.id)} className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors">−</button>
-                                <span className="w-8 text-center font-mono font-bold text-sm">{i.quantity}</span>
-                                <button onClick={() => increaseQty(i.id)} className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors">+</button>
+                                <button
+                                  onClick={() => decreaseQty(i.id)}
+                                  className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                                  disabled={i.quantity <= 1}
+                                >
+                                  −
+                                </button>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  max={i.stockQty || 999}
+                                  value={i.quantity}
+                                  onChange={(e) => {
+                                    const val = parseInt(e.target.value);
+                                    if (!isNaN(val) && val >= 1) {
+                                      const maxQty = i.stockQty || 999;
+                                      const newQty = Math.min(val, maxQty);
+                                      if (updateItem) {
+                                        updateItem(i.id, { quantity: newQty });
+                                      }
+                                      if (val > maxQty) {
+                                        showToast(`Max stock available: ${maxQty}`, "warning");
+                                      }
+                                    }
+                                  }}
+                                  className="w-12 text-center font-mono font-bold text-sm border-0 outline-none bg-transparent [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                />
+                                <button
+                                  onClick={() => increaseQty(i.id)}
+                                  className="w-8 h-8 flex items-center justify-center text-gray-600 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+                                  disabled={i.quantity >= (i.stockQty || 999)}
+                                >
+                                  +
+                                </button>
                               </div>
+                              {i.stockQty !== undefined && i.stockQty > 0 && i.quantity >= i.stockQty && (
+                                <span className="text-[9px] text-red-500 block text-center mt-0.5">Max stock</span>
+                              )}
                             </td>
 
                             <td className="py-3 px-1 align-middle">
@@ -594,7 +709,7 @@ export default function POSPage() {
           </div>
         </div>
 
-        {/* RIGHT COLUMN */}
+        {/* RIGHT COLUMN - Same as before */}
         <div className="lg:col-span-5 flex flex-col gap-4">
           <div className="bg-gray-900 border border-gray-800 rounded-sm p-6 shadow-inner relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-[#4ADE9A]"></div>

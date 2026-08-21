@@ -2,12 +2,12 @@ import { create } from "zustand";
 
 interface ToastState {
   message: string | null;
-  type: "success" | "error" | null;
+  type: "success" | "error" | "warning" | null;
   visible: boolean;
 
   showToast: (
     message: string,
-    type?: "success" | "error"
+    type?: "success" | "error" | "warning"
   ) => void;
 
   clearToast: () => void;

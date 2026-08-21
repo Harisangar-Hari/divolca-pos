@@ -76,6 +76,11 @@ export async function printA4Receipt(data: ReceiptData): Promise<void> {
   const MAX_ITEMS = 15;
   const items = data.items.slice(0, MAX_ITEMS);
   const hasMoreItems = data.items.length > MAX_ITEMS;
+  const paymentModeDisplay = {
+    cash: 'Cash',
+    card: 'Card',
+    credit: 'Credit'
+  }[data.paymentMode] || 'Cash';
 
   const rows = items.map((item, index) => {
     const pctDisc = item.discountPercent || 0;
@@ -257,12 +262,14 @@ export async function printA4Receipt(data: ReceiptData): Promise<void> {
       flex-wrap: wrap;
       gap: 1px 12px;
       padding: 1px 0;
-      font-size: 8.5pt;
+      font-size: 9.5pt;
     }
 
     .customer-details .field {
       display: flex;
+      font-size: 9.5pt;
       gap: 3px;
+      align-items: center;
     }
 
     .customer-details .field .label {
@@ -614,18 +621,23 @@ export async function printA4Receipt(data: ReceiptData): Promise<void> {
     <div class="customer-details">
       <div class="field">
         <span class="label">Name:</span>
-        <span>${data.customerName || "Walk-in Customer"}</span>
+        <span style="font-size: 11pt;">${data.customerName || "Walk-in Customer"}</span>
       </div>
       <div class="field">
         <span class="label">Phone:</span>
-        <span>${data.customerPhone || "-"}</span>
+        <span style="font-size: 11pt;">${data.customerPhone || "-"}</span>
       </div>
       <div class="field">
         <span class="label">Address:</span>
-        <span>${data.customerAddress || "-"}</span>
+        <span style="font-size: 11pt;">${data.customerAddress || "-"}</span>
       </div>
     </div>
+    <div class="field">
+    <span class="label">Payment Mode:</span>
+    <span style="font-size: 11pt;">${paymentModeDisplay}</span>
   </div>
+  </div>
+   
 
   <!-- TABLE -->
   <div class="table-wrap no-page-break">
