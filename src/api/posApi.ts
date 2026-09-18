@@ -1,3 +1,4 @@
+// src/api/posApi.ts
 import { api } from "../services/api";
 
 export const getProductByBarcode = async (barcode: string) => {

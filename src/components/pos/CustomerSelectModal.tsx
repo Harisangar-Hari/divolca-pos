@@ -1,3 +1,4 @@
+// src/components/pos/CustomerSelectModal.tsx
 import { useEffect, useState } from "react";
 import { getCustomers, createCustomer } from "../../api/customerApi";
 

@@ -1,4 +1,4 @@
-// components/CustomerOutstandingDisplay.tsx
+// src/components/CustomerOutstandingDisplay.tsx
 interface Customer {
     id: string;
     name: string;

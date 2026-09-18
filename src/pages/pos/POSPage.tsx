@@ -1,3 +1,4 @@
+//src/pages/pos/POSPage.tsx
 import { useEffect, useRef, useState } from "react";
 import { getProductByBarcode, checkoutSale } from "../../api/posApi";
 import { getProducts } from "../../api/productApi";

@@ -1,3 +1,4 @@
+//src/utils/printReturnReceipt.ts
 import logo from "../assets/logo.jpeg";
 
 interface Item {
@@ -8,7 +9,7 @@ interface Item {
 
 interface ReturnReceiptData {
   invoiceNumber: string;
-  newInvoiceNumber?: string;
+  newInvoiceNumber?: string; 
 
   returnedItems: Item[];
   replacementItems: Item[];

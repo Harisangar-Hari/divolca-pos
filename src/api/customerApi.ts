@@ -1,4 +1,4 @@
-// customerApi.ts
+// src/api/customerApi.ts
 import { api } from "../services/api";
 
 export interface Customer {

@@ -1,3 +1,4 @@
+// src/hooks/useBeep.ts
 export const useBeep = () => {
   const beep = () => {
     const audio = new Audio(

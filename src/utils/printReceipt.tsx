@@ -1,4 +1,4 @@
-// PrintReceipt.ts
+//src/utils/PrintReceipt.ts
 import logoSrc from "../assets/logo.jpeg";
 
 export interface PrintItem {

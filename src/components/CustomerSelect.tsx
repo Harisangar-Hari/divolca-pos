@@ -1,4 +1,4 @@
-// components/CustomerSelect.tsx
+// src/components/CustomerSelect.tsx
 interface Customer {
     id: string;
     name: string;

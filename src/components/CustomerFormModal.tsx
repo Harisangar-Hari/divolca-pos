@@ -1,4 +1,4 @@
-// components/CustomerFormModal.tsx
+// src/components/CustomerFormModal.tsx
 import { useState } from "react";
 
 interface CustomerFormData {

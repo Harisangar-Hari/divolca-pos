@@ -1,3 +1,4 @@
+//src/pages/pos/ReturnPOSPage.tsx
 import { useState } from "react";
 import { api } from "../../services/api";
 import { getProducts } from "../../api/productApi";
@@ -42,6 +43,7 @@ export default function ReturnPOSPage() {
     const [results, setResults] = useState<any[]>([]);
     const [showResults, setShowResults] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [totalAmount, setTotalAmount] = useState(0);
 
     const { showToast } = useToast();
 
@@ -65,6 +67,8 @@ export default function ReturnPOSPage() {
 
             setSubTotal(subTotalAmount);
             setInvoiceDiscount(discountAmount);
+            const totalAmountValue = Number(data?.TotalAmount || 0);
+            setTotalAmount(totalAmountValue);
 
             const safeItems: InvoiceItem[] = items.map((i: any) => ({
                 productId: i.ProductId,
@@ -98,11 +102,18 @@ export default function ReturnPOSPage() {
             return;
         }
 
-        // Calculate proportional discount for this item
-        const discountPercentage = subTotal > 0 ? (invoiceDiscount / subTotal) * 100 : 0;
-        const itemSubtotal = item.unitPrice * qty;
-        const itemDiscount = (itemSubtotal * discountPercentage) / 100;
-        const refundAmount = itemSubtotal - itemDiscount;
+        // ✅ Correct invoice discount rate
+        // Base = TotalAmount + InvoiceDiscount (after-item-discount subtotal)
+        const base = totalAmount + invoiceDiscount;
+        const invoiceDiscountRate = base > 0 ? invoiceDiscount / base : 0;
+
+        // ✅ Per-unit item discount
+        const perUnitItemDiscount =
+            item.quantity > 0 ? (item.discount || 0) / item.quantity : 0;
+
+        // ✅ Refund = (unitPrice − perUnitItemDiscount) × qty × (1 − invoiceDiscountRate)
+        const refundAmount =
+            (item.unitPrice - perUnitItemDiscount) * qty * (1 - invoiceDiscountRate);
 
         setReturnItems(prev => {
             const exists = prev.find(p => p.productId === item.productId);
@@ -129,7 +140,7 @@ export default function ReturnPOSPage() {
                     unitPrice: item.unitPrice,
                     total: refundAmount,
                     reason: reason || undefined,
-                }
+                },
             ];
         });
     };
@@ -300,6 +311,7 @@ export default function ReturnPOSPage() {
             setSearch("");
             setReason("");
             setInvoiceDiscount(0);
+            setTotalAmount(0);
             setSubTotal(0);
 
             showToast("Exchange completed successfully", "success");
@@ -564,10 +576,10 @@ export default function ReturnPOSPage() {
                             </p>
                             <p
                                 className={`mt-1 font-mono text-4xl font-semibold tabular-nums ${balance > 0
-                                        ? "text-[#F87171] [text-shadow:0_0_18px_rgba(248,113,113,0.35)]"
-                                        : balance < 0
-                                            ? "text-[#4ADE9A] [text-shadow:0_0_18px_rgba(74,222,154,0.35)]"
-                                            : "text-white/50"
+                                    ? "text-[#F87171] [text-shadow:0_0_18px_rgba(248,113,113,0.35)]"
+                                    : balance < 0
+                                        ? "text-[#4ADE9A] [text-shadow:0_0_18px_rgba(74,222,154,0.35)]"
+                                        : "text-white/50"
                                     }`}
                             >
                                 Rs {balance.toFixed(2)}
@@ -594,8 +606,8 @@ export default function ReturnPOSPage() {
                             onClick={processExchange}
                             disabled={loading || (returnItems.length === 0 && replacementItems.length === 0)}
                             className={`w-full p-3.5 rounded-xl font-semibold tracking-wide cursor-pointer transition shadow-sm ${loading || (returnItems.length === 0 && replacementItems.length === 0)
-                                    ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                                    : "bg-[#0B6E4F] hover:bg-[#0A5F44] text-white"
+                                ? "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                : "bg-[#0B6E4F] hover:bg-[#0A5F44] text-white"
                                 }`}
                         >
                             {loading ? "Processing..." : "Process Exchange"}
