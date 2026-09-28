@@ -28,7 +28,7 @@ export default function POSPage() {
   const [search, setSearch] = useState("");
   const [cash, setCash] = useState(0);
 
-  const [paymentMode, setPaymentMode] = useState<"cash" | "credit" | "card">("cash");
+  const [paymentMode, setPaymentMode] = useState<"cash" | "credit" | "card">("credit");
 
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState("");

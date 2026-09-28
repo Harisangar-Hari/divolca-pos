@@ -38,6 +38,10 @@ export default function ReturnPOSPage() {
     const [reason, setReason] = useState("");
     const [invoiceDiscount, setInvoiceDiscount] = useState(0);
     const [subTotal, setSubTotal] = useState(0);
+    const [invoiceCustomer, setInvoiceCustomer] = useState<{
+        name: string;
+        phone: string;
+    } | null>(null);
 
     const [search, setSearch] = useState("");
     const [results, setResults] = useState<any[]>([]);
@@ -80,6 +84,15 @@ export default function ReturnPOSPage() {
             }));
 
             setInvoiceItems(safeItems);
+            // ✅ Capture customer from the loaded invoice
+            if (data?.Customers) {
+                setInvoiceCustomer({
+                    name: data.Customers.Name || "",
+                    phone: data.Customers.Phone || "",
+                });
+            } else {
+                setInvoiceCustomer(null);
+            }
             setReturnItems([]);
             setReplacementItems([]);
             showToast("Invoice loaded successfully", "success");
@@ -301,12 +314,16 @@ export default function ReturnPOSPage() {
                 replacementTotal: replacementTotal,
                 balance,
                 reason: reason || "Exchange",
+                // ✅ NEW
+                customerName: invoiceCustomer?.name || undefined,
+                customerPhone: invoiceCustomer?.phone || undefined,
             });
 
             // Reset form
             setInvoiceNumber("");
             setInvoiceItems([]);
             setReturnItems([]);
+            setInvoiceCustomer(null);
             setReplacementItems([]);
             setSearch("");
             setReason("");
