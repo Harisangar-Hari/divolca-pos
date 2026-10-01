@@ -679,8 +679,8 @@ export async function printA4Receipt(data: ReceiptData): Promise<void> {
       </tr>
       ` : ''}
       <tr class="total-row">
-        <td class="label">Net Amount</td>
-        <td class="value">${fmt(data.total)}</td>
+        <td class="label" style="font-size: 12pt">Net Amount</td>
+        <td class="value" style="font-size: 12pt">${fmt(data.total)}</td>
       </tr>
       <tr>
         <td class="label">Paid</td>
